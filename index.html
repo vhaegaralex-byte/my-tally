@@ -3,14 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=./Weekly%20Tally.html">
   <title>Weekly Tally</title>
   <script>
-    window.location.replace(new URL('./Weekly%20Tally.html', window.location.href).href);
+    (function () {
+      var appUrl = new URL('./Weekly%20Tally.html', window.location.href).href;
+      function openApp() { window.location.replace(appUrl); }
+
+      if ('serviceWorker' in navigator && /^https?:$/.test(window.location.protocol)) {
+        navigator.serviceWorker.register('./sw.js')
+          .then(function () { return navigator.serviceWorker.ready; })
+          .then(openApp, openApp);
+      } else {
+        openApp();
+      }
+    })();
   </script>
 </head>
 <body>
-  <p>Opening Weekly Tally…</p>
+  <p>Preparing Weekly Tally for offline use…</p>
   <p>If you are not redirected, <a href="./Weekly%20Tally.html">open Weekly Tally</a>.</p>
 </body>
 </html>
