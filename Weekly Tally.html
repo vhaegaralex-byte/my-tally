@@ -108,6 +108,17 @@ input[type=checkbox]{width:18px;height:18px;padding:0;accent-color:var(--accent)
     </button>
     <button class="btn primary" id="openBuy" type="button">To buy</button>
     <button class="btn" id="openCustom" type="button">Customise</button>
+    <div class="sync-controls" style="margin: 20px 0; padding: 10px; background: #f1f5f9; border-radius: 8px;">
+  <h3>Data Backup & Sync</h3>
+  <button onclick="exportTallyData()" style="padding: 8px 16px; background: #2a78d6; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+    📥 Backup Records (Export)
+  </button>
+  
+  <label style="padding: 8px 16px; background: #10b981; color: white; border-radius: 4px; cursor: pointer; display: inline-block;">
+    📤 Restore Records (Import)
+    <input type="file" id="importFile" accept=".json" onchange="importTallyData(event)" style="display: none;">
+  </label>
+</div>
   </div>
 </header>
 
@@ -233,6 +244,42 @@ input[type=checkbox]{width:18px;height:18px;padding:0;accent-color:var(--accent)
 <div class="toast" id="toast" hidden></div>
 </div>
 <script>
+  // 1. Export your records into a downloadable backup file
+function exportTallyData() {
+  // Change 'weeklyTallyRecords' to whatever key name you use in localStorage for your app
+  const data = localStorage.getItem('weeklyTallyRecords.data.v1') || '[]';
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `weekly-tally-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  
+  URL.revokeObjectURL(url);
+}
+
+// 2. Import a backup file on another device/app to restore your records
+function importTallyData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      
+      // Save it back into localStorage using your app's storage key
+      localStorage.setItem('weeklyTally.data.v1', JSON.stringify(importedData));
+      
+      alert('Records successfully restored! Refreshing app...');
+      location.reload(); // Reloads the page to load the new records onto the screen
+    } catch (err) {
+      alert('Error: This file is not a valid Weekly Tally backup.');
+    }
+  };
+  reader.readAsText(file);
+}
 (function(){
 'use strict';
 var $=function(s){return document.querySelector(s)};
