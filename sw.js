@@ -1,16 +1,49 @@
-const CACHE = 'weekly-tally-v2';
+const CACHE = 'weekly-tally-v3';
 const APP_URL = new URL('./Weekly%20Tally.html', self.registration.scope).href;
 const INDEX_URL = new URL('./index.html', self.registration.scope).href;
 const MANIFEST_URL = new URL('./manifest.json', self.registration.scope).href;
 const ICON_URL = new URL('./tally-icon.svg', self.registration.scope).href;
-const SHELL_URLS = [APP_URL, INDEX_URL, MANIFEST_URL, ICON_URL];
+
+// The app's main stylesheet was accidentally left outside a <style> element,
+// so browsers displayed the CSS as plain text. Repair that boundary at delivery.
+async function repairAppStyles(response) {
+  if (!response || !response.ok) return response;
+
+  const html = await response.text();
+  const repaired = html.replace(
+    /<\/style>\s*(\/\* Layout:)/,
+    '</style>\n<style>\n$1'
+  );
+  if (repaired === html) return new Response(html, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+
+  const headers = new Headers(response.headers);
+  headers.delete('content-length');
+  headers.delete('content-encoding');
+  return new Response(repaired, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+async function getAppResponse() {
+  const response = await fetch(APP_URL, { cache: 'no-store' });
+  return repairAppStyles(response);
+}
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE)
-      .then(cache => cache.addAll(SHELL_URLS))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll([INDEX_URL, MANIFEST_URL, ICON_URL]);
+    const app = await getAppResponse();
+    if (!app || !app.ok) throw new Error('Unable to cache the Weekly Tally app shell.');
+    await cache.put(APP_URL, app);
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', event => {
@@ -34,8 +67,16 @@ self.addEventListener('fetch', event => {
       const cache = await caches.open(CACHE);
       try {
         const response = await fetch(request);
-        if (response.ok) await cache.put(request, response.clone());
-        return response;
+        if (!response.ok) return response;
+
+        const delivered = new URL(request.url).pathname === new URL(APP_URL).pathname
+          ? await repairAppStyles(response)
+          : response;
+        await cache.put(request, delivered.clone());
+        if (new URL(request.url).pathname === new URL(APP_URL).pathname) {
+          await cache.put(APP_URL, delivered.clone());
+        }
+        return delivered;
       } catch {
         return (await cache.match(request, { ignoreSearch: true })) ||
           (await cache.match(APP_URL)) ||
