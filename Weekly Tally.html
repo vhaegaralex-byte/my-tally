@@ -3,6 +3,66 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
 <style>
+  <style>
+  /* Container pinned to the top-right corner */
+  .backup-menu-container {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 9999;
+    font-family: inherit;
+  }
+
+  /* The main Backup button */
+  .backup-toggle-btn {
+    background: #2a78d6;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+
+  .backup-toggle-btn:hover {
+    background: #205fb5;
+  }
+
+  /* The dropdown content (hidden by default) */
+  .backup-dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 40px;
+    background: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+
+  /* Links / Buttons inside the dropdown */
+  .backup-dropdown-content button,
+  .backup-dropdown-content label {
+    color: #1e293b;
+    padding: 10px 14px;
+    text-align: left;
+    background: none;
+    border: none;
+    width: 100%;
+    display: block;
+    cursor: pointer;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .backup-dropdown-content button:hover,
+  .backup-dropdown-content label:hover {
+    background: #f1f5f9;
+  }
+</style>
 /* Layout: a ledger of cards over a customisable backdrop. Week + month summary on top, entry form beside the consumption graph, monthly plan beside the log. */
 :root{
   --bg:#f3f4f2; --surface:rgba(252,252,251,.9); --solid:#fcfcfb; --ink:#14171a; --ink2:#52514e; --muted:#6b6a65;
@@ -244,6 +304,18 @@ input[type=checkbox]{width:18px;height:18px;padding:0;accent-color:var(--accent)
 <div class="toast" id="toast" hidden></div>
 </div>
 <script>
+  function toggleBackupMenu() {
+  const dropdown = document.getElementById('backupDropdown');
+  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+// Optional: Close the menu if you click anywhere else on the screen
+window.onclick = function(event) {
+  if (!event.target.matches('.backup-toggle-btn') && !event.target.closest('.backup-dropdown-content')) {
+    const dropdown = document.getElementById('backupDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+  }
+}
   // 1. Export your records into a downloadable backup file
 function exportTallyData() {
   // Change 'weeklyTallyRecords' to whatever key name you use in localStorage for your app
